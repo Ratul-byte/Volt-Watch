@@ -1,0 +1,36 @@
+# ── Dependencies ──────────────────────────────────────────────────────────
+# Reinstalled automatically with: npm install
+node_modules/
+
+# ── Build Output ──────────────────────────────────────────────────────────
+# Regenerated with: npm run build
+dist/
+
+# ── Electron Builder Cache ────────────────────────────────────────────────
+.cache/
+builder-debug.yml
+builder-effective-config.yaml
+
+# ── App User Data ─────────────────────────────────────────────────────────
+# Local session data stored by the app
+appData/
+
+# ── Logs ──────────────────────────────────────────────────────────────────
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# ── OS Generated Files ────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# ── Editor & IDE ──────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln

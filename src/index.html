@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoltWatch</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg:       #08080d;
+    --bg2:      #0f0f17;
+    --bg3:      #161625;
+    --border:   #1e1e35;
+    --border2:  #2a2a45;
+    --accent:   #00e5ff;
+    --accent2:  #7c3aed;
+    --warn:     #f59e0b;
+    --danger:   #ef4444;
+    --success:  #10b981;
+    --text:     #e8e8f0;
+    --muted:    #6b6b8a;
+    --mono:     'Space Mono', monospace;
+    --sans:     'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Titlebar ── */
+  .titlebar {
+    height: 36px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    -webkit-app-region: drag;
+    flex-shrink: 0;
+    gap: 10px;
+  }
+  .titlebar-logo {
+    display: flex; align-items: center; gap: 8px;
+    -webkit-app-region: no-drag;
+  }
+  .titlebar-logo svg { width: 16px; height: 16px; }
+  .titlebar-name { font-size: 12px; font-weight: 700; letter-spacing: 0.15em; color: var(--accent); }
+  .titlebar-status {
+    margin-left: auto; display: flex; align-items: center; gap: 6px;
+    font-size: 10px; color: var(--muted); font-family: var(--mono);
+    -webkit-app-region: no-drag;
+  }
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--success);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  /* ── Layout ── */
+  .app {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 58px;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 0;
+    gap: 4px;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+  .nav-btn {
+    width: 40px; height: 40px;
+    border: none; background: transparent;
+    border-radius: 10px;
+    color: var(--muted);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .nav-btn:hover { background: var(--bg3); color: var(--text); }
+  .nav-btn.active { background: rgba(0,229,255,0.1); color: var(--accent); }
+  .nav-btn svg { width: 18px; height: 18px; }
+  .nav-btn .tooltip {
+    position: absolute; left: 52px; background: var(--bg3);
+    border: 1px solid var(--border2);
+    padding: 4px 8px; border-radius: 6px;
+    font-size: 11px; white-space: nowrap;
+    opacity: 0; pointer-events: none; transition: 0.15s;
+    z-index: 100;
+  }
+  .nav-btn:hover .tooltip { opacity: 1; }
+
+  /* ── Main Content ── */
+  .main {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border2) transparent;
+  }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── Section title ── */
+  .section-title {
+    font-size: 11px; letter-spacing: 0.2em;
+    color: var(--muted); text-transform: uppercase;
+    margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+  }
+  .section-title::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* ── Grid ── */
+  .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  @media (max-width: 1100px) { .grid-4 { grid-template-columns: repeat(2,1fr); } }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: var(--border2); }
+  .card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .card-label {
+    font-size: 10px; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--muted);
+    margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+  }
+  .card-label svg { width: 13px; height: 13px; }
+
+  .card-value {
+    font-family: var(--mono);
+    font-size: 28px; font-weight: 700;
+    line-height: 1; color: var(--text);
+  }
+  .card-value.accent { color: var(--accent); }
+  .card-value.warn { color: var(--warn); }
+  .card-value.danger { color: var(--danger); }
+  .card-value.success { color: var(--success); }
+
+  .card-sub {
+    font-size: 11px; color: var(--muted);
+    margin-top: 6px; font-family: var(--mono);
+  }
+
+  .card-glow-accent::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+  .card-glow-warn::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--warn), transparent);
+  }
+  .card-glow-danger::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--danger), transparent);
+  }
+
+  /* ── Big Bill Card ── */
+  .bill-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .bill-card::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(0,229,255,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .bill-main { flex: 1; }
+  .bill-label { font-size: 11px; letter-spacing: 0.15em; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
+  .bill-amount { font-family: var(--mono); font-size: 52px; font-weight: 700; color: var(--accent); line-height: 1; }
+  .bill-amount span { font-size: 24px; margin-right: 4px; }
+  .bill-sub { font-size: 13px; color: var(--muted); margin-top: 8px; font-family: var(--mono); }
+  .bill-divider { width: 1px; height: 80px; background: var(--border2); }
+  .bill-stats { display: flex; flex-direction: column; gap: 12px; }
+  .bill-stat { }
+  .bill-stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .bill-stat-value { font-family: var(--mono); font-size: 20px; color: var(--text); }
+
+  /* ── Progress bars ── */
+  .progress-wrap { margin-top: 8px; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-bottom: 5px; font-family: var(--mono); }
+  .progress-bar { height: 4px; background: var(--border2); border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+  .progress-fill.cyan { background: linear-gradient(90deg, var(--accent2), var(--accent)); }
+  .progress-fill.warn { background: linear-gradient(90deg, #d97706, var(--warn)); }
+  .progress-fill.danger { background: linear-gradient(90deg, #dc2626, var(--danger)); }
+
+  /* ── Alert banner ── */
+  .alert-banner {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; color: var(--danger);
+    animation: alertPulse 2s infinite;
+  }
+  .alert-banner.warn {
+    background: rgba(245,158,11,0.1);
+    border-color: rgba(245,158,11,0.3);
+    color: var(--warn);
+  }
+  @keyframes alertPulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.2); }
+    50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+  }
+  .alert-banner.hidden { display: none; }
+
+  /* ── Watt meter gauge ── */
+  .gauge-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 0;
+  }
+  .gauge-svg { width: 160px; height: 100px; }
+  .gauge-val { font-family: var(--mono); font-size: 22px; color: var(--accent); text-align: center; margin-top: 4px; }
+  .gauge-label { font-size: 10px; color: var(--muted); text-align: center; text-transform: uppercase; letter-spacing: 0.1em; }
+
+  /* ── Charts ── */
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+    height: 180px;
+  }
+  .chart-wrap canvas { width: 100% !important; }
+
+  /* ── App usage table ── */
+  .app-list { display: flex; flex-direction: column; gap: 6px; }
+  .app-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 12px;
+    background: var(--bg3);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    transition: border-color 0.15s;
+  }
+  .app-row:hover { border-color: var(--border2); }
+  .app-icon {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: white; flex-shrink: 0;
+  }
+  .app-name { flex: 1; font-size: 12px; font-family: var(--mono); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .app-cpu { font-size: 11px; color: var(--muted); font-family: var(--mono); width: 48px; text-align: right; }
+  .app-watt { font-size: 11px; color: var(--accent); font-family: var(--mono); width: 52px; text-align: right; }
+  .app-bar-wrap { width: 80px; }
+  .app-bar { height: 3px; background: var(--border2); border-radius: 2px; }
+  .app-bar-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--accent2), var(--accent)); }
+
+  /* ── Tariff table ── */
+  .tariff-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+  .tariff-table th {
+    text-align: left; padding: 8px 12px;
+    color: var(--muted); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+  .tariff-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  .tariff-table tr:last-child td { border-bottom: none; }
+  .tariff-table tr.active-slab td { color: var(--accent); background: rgba(0,229,255,0.04); }
+  .tariff-table tr.active-slab td:first-child { border-left: 2px solid var(--accent); }
+
+  /* ── Settings ── */
+  .settings-grid { display: flex; flex-direction: column; gap: 16px; }
+  .setting-row {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .setting-info { flex: 1; }
+  .setting-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .setting-desc { font-size: 11px; color: var(--muted); }
+  .setting-input {
+    background: var(--bg2); border: 1px solid var(--border2);
+    color: var(--text); border-radius: 8px;
+    padding: 8px 12px; font-family: var(--mono); font-size: 14px;
+    width: 140px; outline: none;
+    transition: border-color 0.2s;
+  }
+  .setting-input:focus { border-color: var(--accent); }
+  .toggle {
+    width: 44px; height: 24px;
+    background: var(--border2); border-radius: 12px;
+    cursor: pointer; position: relative; transition: background 0.2s; border: none;
+  }
+  .toggle.on { background: var(--accent); }
+  .toggle::after {
+    content: ''; position: absolute;
+    width: 18px; height: 18px; background: white; border-radius: 50%;
+    top: 3px; left: 3px; transition: left 0.2s;
+  }
+  .toggle.on::after { left: 23px; }
+  .btn {
+    padding: 9px 18px; border-radius: 9px;
+    font-family: var(--sans); font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none; transition: all 0.2s;
+  }
+  .btn-accent { background: var(--accent); color: #000; }
+  .btn-accent:hover { background: #00c4db; transform: translateY(-1px); }
+  .btn-danger { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: var(--danger); }
+  .btn-danger:hover { background: rgba(239,68,68,0.25); }
+  .save-msg { font-size: 12px; color: var(--success); opacity: 0; transition: opacity 0.3s; font-family: var(--mono); }
+  .save-msg.show { opacity: 1; }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* ── Animations ── */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .card, .bill-card { animation: fadeIn 0.4s ease both; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+  <div class="titlebar-logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="2">
+      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+    </svg>
+    <span class="titlebar-name">VOLTWATCH</span>
+  </div>
+  <div class="titlebar-status">
+    <div class="live-dot"></div>
+    <span id="live-label">LIVE</span>
+    <span style="color:var(--border2)">|</span>
+    <span id="sys-label">Loading…</span>
+  </div>
+</div>
+
+<div class="app">
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <button class="nav-btn active" data-page="dashboard" onclick="showPage('dashboard', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      <span class="tooltip">Dashboard</span>
+    </button>
+    <button class="nav-btn" data-page="apps" onclick="showPage('apps', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      <span class="tooltip">App Usage</span>
+    </button>
+    <button class="nav-btn" data-page="tariff" onclick="showPage('tariff', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <span class="tooltip">BD Tariff</span>
+    </button>
+    <button class="nav-btn" data-page="settings" onclick="showPage('settings', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span class="tooltip">Settings</span>
+    </button>
+  </nav>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- DASHBOARD PAGE -->
+    <div id="page-dashboard" class="page active">
+      <div id="alert-danger" class="alert-banner hidden">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span id="alert-text">Bill limit exceeded!</span>
+      </div>
+
+      <!-- Big Bill Card -->
+      <div class="bill-card">
+        <div class="bill-main">
+          <div class="bill-label">Estimated Electricity Bill (Session)</div>
+          <div class="bill-amount"><span>৳</span><span id="val-bill">0.00</span></div>
+          <div class="bill-sub">Based on BPDB residential slab rate · <span id="val-kwh">0.000</span> kWh consumed</div>
+          <div class="progress-wrap" style="margin-top:12px; max-width:320px;">
+            <div class="progress-label"><span>Limit progress</span><span id="limit-pct">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill cyan" id="limit-bar" style="width:0%"></div></div>
+          </div>
+        </div>
+        <div class="bill-divider"></div>
+        <div class="bill-stats">
+          <div class="bill-stat">
+            <div class="bill-stat-label">Projected Monthly</div>
+            <div class="bill-stat-value" id="val-projected">৳0</div>
+          </div>
+          <div class="bill-stat">
+            <div class="bill-stat-label">Projected kWh</div>
+            <div class="bill-stat-value" id="val-proj-kwh">0 kWh</div>
+          </div>
+          <div class="bill-stat">
+            <div class="bill-stat-label">Session Duration</div>
+            <div class="bill-stat-value" id="val-duration">0m</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stat cards -->
+      <div class="grid-4">
+        <div class="card card-glow-accent">
+          <div class="card-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            Live Power Draw
+          </div>
+          <div class="card-value accent" id="val-watts">0 W</div>
+          <div class="card-sub">Estimated from CPU load</div>
+          <div class="gauge-wrap">
+            <svg class="gauge-svg" viewBox="0 0 160 100">
+              <path d="M 20 85 A 60 60 0 0 1 140 85" fill="none" stroke="#1e1e35" stroke-width="8" stroke-linecap="round"/>
+              <path id="gauge-arc" d="M 20 85 A 60 60 0 0 1 140 85" fill="none" stroke="#00e5ff" stroke-width="8" stroke-linecap="round"
+                    stroke-dasharray="189" stroke-dashoffset="189" style="transition:stroke-dashoffset 1s ease"/>
+            </svg>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            CPU Load
+          </div>
+          <div class="card-value" id="val-cpu">0%</div>
+          <div class="card-sub">Current processor load</div>
+          <div class="progress-wrap">
+            <div class="progress-bar"><div class="progress-fill cyan" id="cpu-bar" style="width:0%"></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            Memory Usage
+          </div>
+          <div class="card-value" id="val-mem">0%</div>
+          <div class="card-sub">RAM utilization</div>
+          <div class="progress-wrap">
+            <div class="progress-bar"><div class="progress-fill cyan" id="mem-bar" style="width:0%"></div></div>
+          </div>
+        </div>
+        <div class="card card-glow-warn">
+          <div class="card-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            Cost Rate
+          </div>
+          <div class="card-value warn" id="val-rate">৳0.00/hr</div>
+          <div class="card-sub">Current spend per hour</div>
+        </div>
+      </div>
+
+      <!-- Charts row -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="section-title">Power Usage (Last 24h)</div>
+          <div class="chart-wrap"><canvas id="chart-hourly"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="section-title">Watt Trend (Live)</div>
+          <div class="chart-wrap"><canvas id="chart-live"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Top Apps preview on dashboard -->
+      <div class="card">
+        <div class="section-title">Top Power-Consuming Apps Right Now</div>
+        <div class="app-list" id="dash-app-list">
+          <div style="color:var(--muted); font-size:12px; text-align:center; padding:20px;">Gathering app data…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- APPS PAGE -->
+    <div id="page-apps" class="page">
+      <div class="section-title">Application Power Usage (Session Total)</div>
+      <div class="card" style="margin-bottom:16px;">
+        <div style="font-size:11px; color:var(--muted); margin-bottom:16px; font-family:var(--mono);">
+          Power estimated proportionally by CPU share per process against your configured system TDP.
+        </div>
+        <div class="app-list" id="apps-full-list">
+          <div style="color:var(--muted); font-size:12px; text-align:center; padding:20px;">No data yet…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TARIFF PAGE -->
+    <div id="page-tariff" class="page">
+      <div class="section-title">Bangladesh BPDB Residential Tariff (LT Category)</div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-label">Slab Rate Schedule</div>
+          <table class="tariff-table" id="tariff-table">
+            <thead>
+              <tr>
+                <th>Units (kWh)</th>
+                <th>Rate (৳/kWh)</th>
+                <th>Your Usage</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <div style="margin-top:12px; font-size:11px; color:var(--muted); font-family:var(--mono);">
+            + ৳10 service charge · 5% VAT on total
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">Bill Breakdown (Current Session)</div>
+          <div id="bill-breakdown" style="font-family:var(--mono); font-size:12px; display:flex; flex-direction:column; gap:8px;">
+            <div style="color:var(--muted);">Calculating…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS PAGE -->
+    <div id="page-settings" class="page">
+      <div class="section-title">Configuration</div>
+      <div class="settings-grid">
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-name">System TDP (Watts)</div>
+            <div class="setting-desc">Your PC's estimated total power draw at 100% CPU. Check your CPU + GPU specs. Typical desktop: 150–300W. Laptop: 45–90W.</div>
+          </div>
+          <input class="setting-input" type="number" id="set-tdp" placeholder="e.g. 150" min="10" max="1000">
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-name">Monthly kWh Limit Alert</div>
+            <div class="setting-desc">Get a warning when projected monthly consumption approaches this limit.</div>
+          </div>
+          <input class="setting-input" type="number" id="set-kwh" placeholder="e.g. 100" min="0">
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-name">Monthly Bill Limit Alert (৳)</div>
+            <div class="setting-desc">Get a warning when your estimated bill approaches this BDT amount.</div>
+          </div>
+          <input class="setting-input" type="number" id="set-bdt" placeholder="e.g. 500" min="0">
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-name">Desktop Notifications</div>
+            <div class="setting-desc">Show system notifications when limits are approached or exceeded.</div>
+          </div>
+          <button class="toggle" id="toggle-alerts" onclick="toggleAlerts()"></button>
+        </div>
+        <div style="display:flex; gap:12px; align-items:center;">
+          <button class="btn btn-accent" onclick="saveSettings()">Save Settings</button>
+          <button class="btn btn-danger" onclick="resetData()">Reset Session Data</button>
+          <span class="save-msg" id="save-msg">Settings saved ✓</span>
+        </div>
+      </div>
+
+      <div style="margin-top:32px;">
+        <div class="section-title">System Information</div>
+        <div class="card">
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; font-family:var(--mono); font-size:12px;">
+            <div><div style="color:var(--muted); margin-bottom:4px; font-size:10px; text-transform:uppercase;">CPU</div><div id="sys-cpu">—</div></div>
+            <div><div style="color:var(--muted); margin-bottom:4px; font-size:10px; text-transform:uppercase;">System</div><div id="sys-model">—</div></div>
+            <div><div style="color:var(--muted); margin-bottom:4px; font-size:10px; text-transform:uppercase;">OS</div><div id="sys-os">—</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────
+let settings = { tdpWatts: 65, limitBdt: 500, limitKwh: 100, alertsEnabled: true };
+let liveWatts = Array(40).fill(0);
+let liveLabels = Array(40).fill('');
+let hourlyChart, liveChart;
+
+// ─── Page navigation ──────────────────────────────────────────────────────
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ─── Charts setup ─────────────────────────────────────────────────────────
+const CHART_DEFAULTS = {
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: { duration: 300 },
+  plugins: { legend: { display: false } },
+  scales: {
+    x: {
+      grid: { color: '#1e1e35' },
+      ticks: { color: '#6b6b8a', font: { family: 'Space Mono', size: 9 }, maxRotation: 0 }
+    },
+    y: {
+      grid: { color: '#1e1e35' },
+      ticks: { color: '#6b6b8a', font: { family: 'Space Mono', size: 9 } }
+    }
+  }
+};
+
+function initCharts() {
+  hourlyChart = new Chart(document.getElementById('chart-hourly'), {
+    type: 'bar',
+    data: {
+      labels: [],
+      datasets: [{
+        data: [],
+        backgroundColor: 'rgba(0,229,255,0.25)',
+        borderColor: '#00e5ff',
+        borderWidth: 1,
+        borderRadius: 3
+      }]
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      scales: {
+        ...CHART_DEFAULTS.scales,
+        y: { ...CHART_DEFAULTS.scales.y, title: { display: true, text: 'Wh', color: '#6b6b8a', font: { size: 9 } } }
+      }
+    }
+  });
+
+  liveChart = new Chart(document.getElementById('chart-live'), {
+    type: 'line',
+    data: {
+      labels: liveLabels,
+      datasets: [{
+        data: liveWatts,
+        borderColor: '#7c3aed',
+        backgroundColor: 'rgba(124,58,237,0.1)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0
+      }]
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      scales: {
+        ...CHART_DEFAULTS.scales,
+        y: { ...CHART_DEFAULTS.scales.y,
+          title: { display: true, text: 'Watts', color: '#6b6b8a', font: { size: 9 } },
+          min: 0
+        }
+      }
+    }
+  });
+}
+
+// ─── Gauge arc update ─────────────────────────────────────────────────────
+function updateGauge(watts, maxWatts) {
+  const arc = document.getElementById('gauge-arc');
+  const pct = Math.min(watts / maxWatts, 1);
+  const total = 189;
+  arc.style.strokeDashoffset = total - (total * pct);
+  arc.style.stroke = pct > 0.8 ? '#ef4444' : pct > 0.5 ? '#f59e0b' : '#00e5ff';
+}
+
+// ─── Duration formatting ──────────────────────────────────────────────────
+function formatDuration(ms) {
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+// ─── App list renderer ────────────────────────────────────────────────────
+function renderApps(apps, containerId, limit = 8) {
+  const el = document.getElementById(containerId);
+  if (!apps || apps.length === 0) {
+    el.innerHTML = '<div style="color:var(--muted); font-size:12px; text-align:center; padding:20px;">No active processes detected</div>';
+    return;
+  }
+  const maxW = apps[0]?.estimatedW || 1;
+  el.innerHTML = apps.slice(0, limit).map(app => {
+    const initials = (app.name || '?').slice(0, 2).toUpperCase();
+    const pct = Math.round((app.estimatedW / maxW) * 100);
+    return `
+    <div class="app-row">
+      <div class="app-icon">${initials}</div>
+      <div class="app-name">${app.name}</div>
+      <div class="app-cpu">${app.cpu ?? '—'}% CPU</div>
+      <div class="app-watt">${app.estimatedW ?? '—'} W</div>
+      <div class="app-bar-wrap">
+        <div class="app-bar"><div class="app-bar-fill" style="width:${pct}%"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderAppsSession(apps, containerId) {
+  const el = document.getElementById(containerId);
+  if (!apps || apps.length === 0) {
+    el.innerHTML = '<div style="color:var(--muted); font-size:12px; text-align:center; padding:20px;">No session app data yet</div>';
+    return;
+  }
+  const maxWh = apps[0]?.totalWh || 1;
+  el.innerHTML = apps.map(app => {
+    const initials = (app.name || '?').slice(0, 2).toUpperCase();
+    const pct = Math.round((app.totalWh / maxWh) * 100);
+    return `
+    <div class="app-row">
+      <div class="app-icon">${initials}</div>
+      <div class="app-name">${app.name}</div>
+      <div class="app-cpu">${app.totalKwh} kWh</div>
+      <div class="app-watt" style="color:var(--warn)">৳${(app.totalKwh * 5.5).toFixed(3)}</div>
+      <div class="app-bar-wrap">
+        <div class="app-bar"><div class="app-bar-fill" style="width:${pct}%"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Tariff table renderer ────────────────────────────────────────────────
+function renderTariff(tariff, totalKwh) {
+  const tbody = document.querySelector('#tariff-table tbody');
+  let remaining = totalKwh;
+  let prev = 0;
+  const rows = tariff.slabs.map(slab => {
+    const inSlab = Math.min(Math.max(remaining, 0), slab.upTo - prev);
+    const active = remaining > 0 && inSlab > 0;
+    remaining -= inSlab;
+    prev = slab.upTo;
+    return `<tr ${active ? 'class="active-slab"' : ''}>
+      <td>${slab.label}</td>
+      <td>৳${slab.rate.toFixed(2)}</td>
+      <td>${active ? (inSlab).toFixed(3) + ' kWh' : '—'}</td>
+    </tr>`;
+  });
+  tbody.innerHTML = rows.join('');
+}
+
+function renderBillBreakdown(tariff, kwhUsed, bill) {
+  const el = document.getElementById('bill-breakdown');
+  let rows = [];
+  let remaining = kwhUsed;
+  let prev = 0;
+  let energy = 0;
+  for (const slab of tariff.slabs) {
+    const inSlab = Math.min(Math.max(remaining, 0), slab.upTo - prev);
+    if (inSlab > 0) {
+      const cost = inSlab * slab.rate;
+      energy += cost;
+      rows.push(`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)">
+        <span style="color:var(--muted)">${slab.label}</span>
+        <span>৳${cost.toFixed(2)}</span>
+      </div>`);
+    }
+    remaining -= inSlab;
+    prev = slab.upTo;
+    if (remaining <= 0) break;
+  }
+  const sc = tariff.serviceCharge;
+  const vat = (energy + sc) * tariff.vatRate;
+  rows.push(`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted)">Service Charge</span><span>৳${sc.toFixed(2)}</span></div>`);
+  rows.push(`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted)">VAT (5%)</span><span>৳${vat.toFixed(2)}</span></div>`);
+  rows.push(`<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px"><span style="color:var(--accent)">TOTAL</span><span style="color:var(--accent)">৳${bill.toFixed(2)}</span></div>`);
+  el.innerHTML = rows.join('');
+}
+
+// ─── Main update handler ──────────────────────────────────────────────────
+function handleUpdate(data) {
+  settings = data.settings || settings;
+
+  // Big bill card
+  document.getElementById('val-bill').textContent = data.currentBill.toFixed(2);
+  document.getElementById('val-kwh').textContent = data.totalKwh.toFixed(4);
+  document.getElementById('val-projected').textContent = '৳' + data.projectedMonthly.toFixed(0);
+  document.getElementById('val-proj-kwh').textContent = data.projectedKwh.toFixed(1) + ' kWh';
+  document.getElementById('val-duration').textContent = formatDuration(Date.now() - data.startTime);
+
+  // Stat cards
+  document.getElementById('val-watts').textContent = data.watts.toFixed(1) + ' W';
+  document.getElementById('val-cpu').textContent = data.cpuLoad + '%';
+  document.getElementById('val-mem').textContent = data.memUsed + '%';
+  document.getElementById('cpu-bar').style.width = data.cpuLoad + '%';
+  document.getElementById('mem-bar').style.width = data.memUsed + '%';
+
+  // Cost rate
+  const ratePerHour = (data.watts / 1000) * 7.95;
+  document.getElementById('val-rate').textContent = '৳' + ratePerHour.toFixed(3) + '/hr';
+
+  // Gauge
+  updateGauge(data.watts, settings.tdpWatts || 150);
+
+  // Limit bar
+  const limitBdt = settings.limitBdt || 500;
+  const pctBill = Math.min((data.currentBill / limitBdt) * 100, 100);
+  document.getElementById('limit-bar').style.width = pctBill + '%';
+  document.getElementById('limit-bar').className = 'progress-fill ' +
+    (pctBill > 90 ? 'danger' : pctBill > 70 ? 'warn' : 'cyan');
+  document.getElementById('limit-pct').textContent = pctBill.toFixed(1) + '%';
+
+  // Alert banner
+  const alertEl = document.getElementById('alert-danger');
+  if (data.currentBill >= limitBdt) {
+    alertEl.classList.remove('hidden', 'warn');
+    document.getElementById('alert-text').textContent =
+      `🚨 Bill limit EXCEEDED! ৳${data.currentBill.toFixed(2)} / ৳${limitBdt}`;
+  } else if (data.currentBill >= limitBdt * 0.9) {
+    alertEl.classList.remove('hidden');
+    alertEl.classList.add('warn');
+    document.getElementById('alert-text').textContent =
+      `⚠ Approaching limit: ৳${data.currentBill.toFixed(2)} of ৳${limitBdt}`;
+  } else {
+    alertEl.classList.add('hidden');
+  }
+
+  // Live watt chart
+  liveWatts.push(data.watts);
+  liveWatts.shift();
+  liveLabels.push(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+  liveLabels.shift();
+  liveChart.data.labels = [...liveLabels];
+  liveChart.data.datasets[0].data = [...liveWatts];
+  liveChart.update('none');
+
+  // Hourly chart
+  if (data.hourly && data.hourly.length > 0) {
+    hourlyChart.data.labels = data.hourly.map(h => `${h.hour}:00`);
+    hourlyChart.data.datasets[0].data = data.hourly.map(h => Math.round(h.wh * 10) / 10);
+    hourlyChart.update('none');
+  }
+
+  // Apps
+  renderApps(data.topApps, 'dash-app-list');
+  renderAppsSession(data.appUsage, 'apps-full-list');
+
+  // Tariff page
+  renderTariff(data.tariff, data.totalKwh);
+  renderBillBreakdown(data.tariff, data.totalKwh, data.currentBill);
+}
+
+// ─── Settings ─────────────────────────────────────────────────────────────
+function toggleAlerts() {
+  const btn = document.getElementById('toggle-alerts');
+  btn.classList.toggle('on');
+}
+
+async function saveSettings() {
+  const tdp = parseFloat(document.getElementById('set-tdp').value) || 65;
+  const kwh = parseFloat(document.getElementById('set-kwh').value) || 100;
+  const bdt = parseFloat(document.getElementById('set-bdt').value) || 500;
+  const alerts = document.getElementById('toggle-alerts').classList.contains('on');
+  await window.voltwatch.saveSettings({ tdpWatts: tdp, limitKwh: kwh, limitBdt: bdt, alertsEnabled: alerts });
+  const msg = document.getElementById('save-msg');
+  msg.classList.add('show');
+  setTimeout(() => msg.classList.remove('show'), 2000);
+}
+
+async function resetData() {
+  if (confirm('Reset all session data? This cannot be undone.')) {
+    await window.voltwatch.resetData();
+    liveWatts = Array(40).fill(0);
+  }
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────
+async function init() {
+  initCharts();
+
+  const data = await window.voltwatch.getData();
+  if (data?.settings) {
+    settings = data.settings;
+    document.getElementById('set-tdp').value = settings.tdpWatts || 65;
+    document.getElementById('set-kwh').value = settings.limitKwh || 100;
+    document.getElementById('set-bdt').value = settings.limitBdt || 500;
+    if (settings.alertsEnabled) document.getElementById('toggle-alerts').classList.add('on');
+  }
+
+  const sysInfo = await window.voltwatch.getSystemInfo();
+  document.getElementById('sys-label').textContent = sysInfo.cpu?.split(' ').slice(0, 4).join(' ') || 'Unknown CPU';
+  document.getElementById('sys-cpu').textContent = sysInfo.cpu || '—';
+  document.getElementById('sys-model').textContent = sysInfo.system || '—';
+  document.getElementById('sys-os').textContent = sysInfo.os || '—';
+
+  window.voltwatch.onUpdate(handleUpdate);
+}
+
+init();
+</script>
+</body>
+</html>
