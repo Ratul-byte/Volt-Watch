@@ -1,6 +1,6 @@
 # ⚡ VoltWatch
 
-> A real-time PC electricity bill monitor built for Bangladesh — tracks your power usage, calculates your BPDB bill live, and alerts you before you go over budget.
+> A real-time PC electricity bill monitor built for Bangladesh — tracks your power usage, calculates your BPDB bill live, and alerts you before you go over budget. Although it is now configured on the basis of the regulations in Bangladesh, in future I am hoping to make an international framework.
 
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
 ![Electron](https://img.shields.io/badge/Electron-28-47848F)
@@ -9,7 +9,7 @@
 
 ## What It Does
 
-VoltWatch runs in the background and estimates how much electricity your PC is consuming in real time. It then calculates your bill using the official **BPDB residential slab rates** — the same rates on your actual electricity bill. You get live graphs, per-app breakdowns, and warnings before you exceed your limit.
+VoltWatch runs in the background and estimates how much electricity your PC is consuming in real time. It then calculates your bill using the official **BPDB residential slab rates** — the same rates on your actual electricity bill. You get live graphs, per-app breakdowns, and warnings before you exceed your limit. Click [here](#installation) to head to the installation section.
 
 - **Live power draw** — Estimated from your CPU load against your system TDP
 - **Real-time bill** — BPDB slab rates with VAT, updated every 3 seconds
@@ -22,14 +22,17 @@ VoltWatch runs in the background and estimates how much electricity your PC is c
 
 ---
 
-## Visuals
-### Dashboard (Live bill, Watt Trend, CPU Load, Memory Usage, Cost Rate)
+## Features and Visuals
+### Dashboard
+![dashboard](DEMO/vw1.gif)
 
+### App Usage
+![appuse](DEMO/vw2.gif)
 
+![appbill](DEMO/vw3.png)
 
-| Dashboard | App Usage | BD Tariff |
-|-----------|-----------|-----------|
-| Live bill, watt gauge, CPU/RAM, charts | Per-process power breakdown | Slab table with your current usage highlighted |
+### Tariff Tab
+![tariff](DEMO/vw4.png)
 
 ---
 
@@ -100,6 +103,8 @@ Use the **portable version** to test first, then run the installer if you want i
 ## Configuration
 
 Open the app and go to **Settings** (gear icon in the sidebar).
+
+![settings](DEMO/vw5.png)
 
 | Setting | Description |
 |---------|-------------|
