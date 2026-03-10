@@ -49,7 +49,7 @@ Should return something like `v20.x.x`.
 
 **1. Extract the project**
 
-Unzip `VoltWatch-Project.zip` to any drive with at least 500MB free space. Avoid C drive if it's tight — everything stays in the folder you choose.
+Unzip `VoltWatch-Project.zip` to any drive with at least 500MB free space.
 
 **2. Open Command Prompt inside the folder**
 
