@@ -22,7 +22,10 @@ VoltWatch runs in the background and estimates how much electricity your PC is c
 
 ---
 
-## Screenshots
+## Visuals
+### Dashboard (Live bill, Watt Trend, CPU Load, Memory Usage, Cost Rate)
+
+
 
 | Dashboard | App Usage | BD Tariff |
 |-----------|-----------|-----------|
