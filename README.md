@@ -188,19 +188,6 @@ You may see a **Windows SmartScreen warning** the first time you run the `.exe` 
 
 ---
 
-## Updating
-
-To update Electron (and its bundled Chromium) in the future:
-
-```
-npm update
-npm run build
-```
-
-For a personal local-use app like this, once a year is more than enough. The security risk from an outdated Electron is minimal since VoltWatch loads no external websites and receives no data from the internet.
-
----
-
 ## Project Structure
 
 ```
