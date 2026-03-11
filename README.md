@@ -14,7 +14,7 @@ VoltWatch is a real-time PC electricity bill monitor that runs in the background
 - **Monthly projection** — Estimates your full monthly bill from current session data
 - **Full tariff breakdown** — Shows exactly which BPDB slab you're currently in
 
-Click [here](#installation) to head to the installation section.
+Click [here](#prerequisites) to head to the installation section.
 
 ---
 
