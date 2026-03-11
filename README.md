@@ -1,15 +1,9 @@
 # ⚡ VoltWatch
 
-> A real-time PC electricity bill monitor built for Bangladesh — tracks your power usage, calculates your BPDB bill live, and alerts you before you go over budget. Although it is now configured on the basis of the regulations in Bangladesh, in future I am hoping to make an international framework.
-
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
 ![Electron](https://img.shields.io/badge/Electron-28-47848F)
 
----
-
-## What It Does
-
-VoltWatch runs in the background and estimates how much electricity your PC is consuming in real time. It then calculates your bill using the official **BPDB residential slab rates** — the same rates on your actual electricity bill. You get live graphs, per-app breakdowns, and warnings before you exceed your limit. Click [here](#installation) to head to the installation section.
+VoltWatch is a real-time PC electricity bill monitor that runs in the background and estimates how much electricity your PC is consuming in real time. It then calculates your bill using the official **BPDB residential slab rates** — the same rates on your actual electricity bill. You get live graphs, per-app breakdowns, and warnings before you exceed your limit. 
 
 - **Live power draw** — Estimated from your CPU load against your system TDP
 - **Real-time bill** — BPDB slab rates with VAT, updated every 3 seconds
@@ -20,9 +14,11 @@ VoltWatch runs in the background and estimates how much electricity your PC is c
 - **Monthly projection** — Estimates your full monthly bill from current session data
 - **Full tariff breakdown** — Shows exactly which BPDB slab you're currently in
 
+Click [here](#gettingstarted) to head to the installation section.
+
 ---
 
-## Features and Visuals
+## Visuals
 ### Dashboard
 ![dashboard](DEMO/vw1.gif)
 
@@ -160,6 +156,22 @@ Idle Power = 20% of your configured TDP
 ```
 
 The more accurately you set your TDP in Settings, the more accurate your bill calculation will be.
+
+## How Data Is Fetched
+
+VoltWatch uses a package called [`systeminformation`](https://systeminformation.io) which talks directly to **Windows Management Instrumentation (WMI)** — the same underlying system that powers Task Manager. Here's exactly what happens every 3 seconds:
+
+### CPU Load
+```js
+si.currentLoad()
+```
+Reads the real-time CPU usage percentage across all cores, averaged into one number. This is identical to what you see in Task Manager → Performance tab.
+
+### Per-App Process List
+```js
+si.processes()
+```
+Fetches every running process with its name, CPU%, and RAM usage — identical to Task Manager → Details tab. VoltWatch sorts by CPU% and displays the top apps.
 
 ---
 
